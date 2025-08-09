@@ -172,6 +172,9 @@ class Custom_Body_Content_Display {
         ?>
         <div class="wrap">
             <h1>Menu Items & Font Settings</h1>
+                <div style="background-color:#f0f8ff; border: 1px solid #0073aa; padding: 12px 20px; border-radius: 6px; color: #0073aa; font-family: Arial, sans-serif; font-size: 14px; max-width: 600px;">
+  <strong>Note:</strong> To display the cursor image hover effect menu, add the shortcode <code>[wp_cursor_menu]</code> anywhere on your page or post.
+</div>
 
             <form method="post" action="options.php">
                 <?php
@@ -266,9 +269,7 @@ class Custom_Body_Content_Display {
                 <?php submit_button(); ?>
             </form>
             
-          <div style="background-color:#f0f8ff; border: 1px solid #0073aa; padding: 12px 20px; border-radius: 6px; color: #0073aa; font-family: Arial, sans-serif; font-size: 14px; max-width: 600px;">
-  <strong>Note:</strong> To display the cursor image hover effect menu, add the shortcode <code>[wp_cursor_menu]</code> anywhere on your page or post.
-</div>
+      
             
         </div>
         <?php
