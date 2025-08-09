@@ -1,0 +1,36 @@
+.knowme {
+  display: flex;
+  align-items: center;
+  justify-content: stretch;
+  min-height: 100vh;
+  overflow: hidden;
+}
+
+.listme {
+  width: 100%;
+  margin: 0 !important;
+  padding: 0;
+}
+
+.conten {
+  display: inline-block;
+  border-bottom: 2px solid #ccc;
+  width: 100%;
+  font-family:inherit;
+  padding: 2rem;
+  padding-left:0;
+}
+
+.conten img.swipeimage {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 200px;
+  height: 200px;
+  object-fit: cover;
+  transform: translateX(-50%) translateY(-50%);
+  z-index: 9;
+  opacity: 0;
+  visibily: hidden;
+  pointer-events: none;
+}
