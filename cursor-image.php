@@ -1,7 +1,8 @@
 <?php
 /**
  * Plugin Name: Cursor Image on Hover
- * Description: Displays custom body content with GSAP scripts and plugin CSS/JS properly enqueued. Includes admin menu items settings with drag & drop reorder and icon buttons.
+ * Description: Displays custom body content with GSAP scripts and plugin CSS/JS properly enqueued. Includes admin menu items settings with drag & drop reorder and icon buttons.Shortcode [wp_cursor_menu]
+ 
  * Version: 1.3
  * Author: WP Design Lab
  */
