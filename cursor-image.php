@@ -1,9 +1,8 @@
 <?php
 /**
  * Plugin Name: Cursor Image on Hover
- * Description: Displays custom body content with GSAP scripts and plugin CSS/JS properly enqueued. Includes admin menu items settings with drag & drop reorder and icon buttons.Shortcode [wp_cursor_menu]
- 
- * Version: 1.3
+ * Description: Displays custom body content with GSAP scripts and plugin CSS/JS properly enqueued. Includes admin menu settings with drag & drop reorder, icon buttons, and font size option. Shortcode: [wp_cursor_menu]
+ * Version: 1.4
  * Author: WP Design Lab
  */
 
@@ -11,18 +10,17 @@ defined('ABSPATH') || exit;
 
 class Custom_Body_Content_Display {
     private $option_name = 'cbdm_menu_items';
+    private $settings_option = 'cbdm_font_settings';
 
     public function __construct() {
         add_action('wp_enqueue_scripts', [$this, 'enqueue_assets']);
-      add_shortcode('wp_cursor_menu', [$this, 'render_shortcode']);
-
+        add_shortcode('wp_cursor_menu', [$this, 'render_shortcode']);
 
         add_action('admin_menu', [$this, 'add_settings_page']);
         add_action('admin_init', [$this, 'register_settings']);
         add_action('admin_enqueue_scripts', [$this, 'enqueue_admin_scripts']);
     }
 
-    // Enqueue frontend scripts and styles
     public function enqueue_assets() {
         wp_enqueue_script('gsap', 'https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js', [], '3.12.5', true);
         wp_enqueue_script('gsap-gsdevtools', 'https://unpkg.com/gsap@3/dist/GSDevTools.min.js', ['gsap'], null, true);
@@ -33,24 +31,28 @@ class Custom_Body_Content_Display {
 
         $plugin_url = plugin_dir_url(__FILE__);
         wp_enqueue_script('custom-script', $plugin_url . 'script.js', ['gsap'], null, true);
-      /*  wp_enqueue_style('extra-css', $plugin_url . 'extra.css');*/
         wp_enqueue_style('style-css', $plugin_url . 'style.css');
+
+        $font_settings = get_option($this->settings_option, ['font_size' => 'inherit']);
+        $font_size = esc_html($font_settings['font_size'] ?? 'inherit');
+
+        $custom_css = "
+            ul.listme li.conten .text h3 {
+                font-size: {$font_size};
+            }
+        ";
+        wp_add_inline_style('style-css', $custom_css);
     }
 
-    // Shortcode outputs saved menu items
     public function render_shortcode() {
-	if (is_admin()) {
-        return ''; // or return '<p>Preview disabled in admin.</p>';
-    }
+        if (is_admin()) {
+            return ''; // Disable preview in admin
+        }
 
         $items = get_option($this->option_name, []);
 
         if (empty($items)) {
-            ob_start();
-            ?>
-            <div class="msg">No data found</div>
-            <?php
-            return ob_get_clean();
+            return '<div class="msg">No data found</div>';
         }
 
         ob_start();
@@ -66,7 +68,7 @@ class Custom_Body_Content_Display {
                 <?php endif; ?>
                 <img class="swipeimage" src="<?php echo $img; ?>" alt="<?php echo $title; ?>">
                 <div class="text">
-                  <h3><?php echo $title; ?></h3>
+                    <h3><?php echo $title; ?></h3>
                 </div>
                 <?php if ($link): ?>
                     </a>
@@ -81,7 +83,7 @@ class Custom_Body_Content_Display {
 
     public function add_settings_page() {
         add_options_page(
-            'Menu Items',
+            'Menu Items & Font Settings',
             'Menu Items',
             'manage_options',
             'custom_body_content_menu_items',
@@ -91,6 +93,7 @@ class Custom_Body_Content_Display {
 
     public function register_settings() {
         register_setting('custom_body_content_group', $this->option_name, [$this, 'sanitize_menu_items']);
+        register_setting('custom_body_content_group', $this->settings_option, [$this, 'sanitize_font_settings']);
     }
 
     public function sanitize_menu_items($input) {
@@ -107,18 +110,29 @@ class Custom_Body_Content_Display {
         return $clean;
     }
 
+    public function sanitize_font_settings($input) {
+        $output = [
+            'font_size' => sanitize_text_field($input['font_size'] ?? 'inherit'),
+        ];
+
+        if (!preg_match('/^(\d+(?:\.\d+)?)(px|em|rem|%)$/', $output['font_size'])) {
+            if ($output['font_size'] !== 'inherit') {
+                $output['font_size'] = 'inherit';
+            }
+        }
+
+        return $output;
+    }
+
     public function enqueue_admin_scripts($hook) {
         if ($hook !== 'settings_page_custom_body_content_menu_items') return;
 
         wp_enqueue_media();
         wp_enqueue_script('jquery');
         wp_enqueue_script('jquery-ui-sortable');
-        wp_enqueue_style('wp-jquery-ui-dialog'); // for drag drop styles
+        wp_enqueue_style('wp-jquery-ui-dialog');
 
-        // Inline styles for the page
         wp_add_inline_style('wp-jquery-ui-dialog', $this->get_admin_css());
-
-        // Inline JS
         wp_add_inline_script('jquery', $this->get_admin_js());
     }
 
@@ -126,14 +140,18 @@ class Custom_Body_Content_Display {
         if (!current_user_can('manage_options')) wp_die('Permission denied');
 
         $items = get_option($this->option_name, []);
+        $font_settings = get_option($this->settings_option, ['font_size' => 'inherit']);
         ?>
         <div class="wrap">
-            <h1>Menu Items</h1>
+            <h1>Menu Items & Font Settings</h1>
+
             <form method="post" action="options.php">
                 <?php
                 settings_fields('custom_body_content_group');
                 do_settings_sections('custom_body_content_group');
                 ?>
+
+                <h2>Menu Items</h2>
                 <table class="form-table" id="menu-items-table">
                     <thead>
                         <tr>
@@ -198,6 +216,18 @@ class Custom_Body_Content_Display {
                 <p>
                     <button id="add-menu-item" class="button button-primary">Add Menu Item</button>
                 </p>
+
+                <h2>Font Settings</h2>
+                <table class="form-table">
+                    <tr>
+                        <th scope="row"><label for="font_size">Font Size</label></th>
+                        <td>
+                            <input type="text" name="<?php echo esc_attr($this->settings_option); ?>[font_size]" id="font_size" value="<?php echo esc_attr($font_settings['font_size']); ?>" class="regular-text" placeholder="e.g. 28px, 1.5rem, inherit">
+                            <p class="description">Enter font size with units (px, em, rem, %) or "inherit". Font family will use your theme default.</p>
+                        </td>
+                    </tr>
+                </table>
+
                 <?php submit_button(); ?>
             </form>
         </div>
@@ -234,27 +264,26 @@ class Custom_Body_Content_Display {
         return <<<JS
 jQuery(document).ready(function($){
     // Media uploader
-   function mediaUploader(button) {
-    button.on('click', function(e){
-        e.preventDefault();
+    function mediaUploader(button) {
+        button.on('click', function(e){
+            e.preventDefault();
 
-        var btn = $(this);
-        var file_frame = wp.media({
-            title: 'Select or Upload Image',
-            button: { text: 'Use this image' },
-            multiple: false
+            var btn = $(this);
+            var file_frame = wp.media({
+                title: 'Select or Upload Image',
+                button: { text: 'Use this image' },
+                multiple: false
+            });
+
+            file_frame.on('select', function(){
+                var attachment = file_frame.state().get('selection').first().toJSON();
+                btn.siblings('input.image-url').val(attachment.url);
+                btn.siblings('img.image-preview').attr('src', attachment.url).show();
+            });
+
+            file_frame.open();
         });
-
-        file_frame.on('select', function(){
-            var attachment = file_frame.state().get('selection').first().toJSON();
-            btn.siblings('input.image-url').val(attachment.url);
-            btn.siblings('img.image-preview').attr('src', attachment.url).show();
-        });
-
-        file_frame.open();
-    });
-}
-
+    }
 
     mediaUploader($('.upload-image'));
 
@@ -285,7 +314,6 @@ jQuery(document).ready(function($){
             var originals = tr.children();
             var helper = tr.clone();
             helper.children().each(function(index){
-                // Set helper cell sizes to match original sizes
                 $(this).width(originals.eq(index).width());
             });
             return helper;
@@ -307,7 +335,7 @@ JS;
             <tr>
                 <td class="drag-handle" title="Drag to reorder" style="cursor:move; text-align:center;">&#9776;</td>
                 <td>
-                    <input type="hidden" class="image-url" name="<?php echo esc_attr($this->option_name); ?>[__index__][image]">
+                    <input type="hidden" class="image-url" name="<?php echo esc_attr($this->option_name); ?>[__index__][image]" value="">
                     <button class="button upload-image">Upload</button><br>
                     <img class="image-preview" src="" style="max-width:100px; margin-top:5px; display:none;">
                 </td>
@@ -329,4 +357,3 @@ JS;
 }
 
 new Custom_Body_Content_Display();
-
