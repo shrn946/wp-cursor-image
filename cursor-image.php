@@ -13,7 +13,8 @@ class Custom_Body_Content_Display {
 
     public function __construct() {
         add_action('wp_enqueue_scripts', [$this, 'enqueue_assets']);
-        add_shortcode('custom_body_content', [$this, 'render_shortcode']);
+      add_shortcode('wp_cursor_menu', [$this, 'render_shortcode']);
+
 
         add_action('admin_menu', [$this, 'add_settings_page']);
         add_action('admin_init', [$this, 'register_settings']);
@@ -37,6 +38,10 @@ class Custom_Body_Content_Display {
 
     // Shortcode outputs saved menu items
     public function render_shortcode() {
+	if (is_admin()) {
+        return ''; // or return '<p>Preview disabled in admin.</p>';
+    }
+
         $items = get_option($this->option_name, []);
 
         if (empty($items)) {
