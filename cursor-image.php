@@ -1,8 +1,8 @@
 <?php
 /**
  * Plugin Name: Cursor Image on Hover
- * Description: Displays custom body content with GSAP scripts and plugin CSS/JS properly enqueued. Includes admin menu settings with drag & drop reorder, icon buttons, and font size option. Shortcode: [wp_cursor_menu]
- * Version: 1.4
+ * Description: Displays custom body content with GSAP scripts and plugin CSS/JS properly enqueued. Includes admin menu settings with drag & drop reorder, icon buttons, font size, and text color option. Shortcode: [wp_cursor_menu]
+ * Version: 1.5
  * Author: WP Design Lab
  */
 
@@ -33,12 +33,21 @@ class Custom_Body_Content_Display {
         wp_enqueue_script('custom-script', $plugin_url . 'script.js', ['gsap'], null, true);
         wp_enqueue_style('style-css', $plugin_url . 'style.css');
 
-        $font_settings = get_option($this->settings_option, ['font_size' => 'inherit']);
+        $font_settings = get_option($this->settings_option, ['font_size' => 'inherit', 'text_color' => '#ffff']);
         $font_size = esc_html($font_settings['font_size'] ?? 'inherit');
+        $text_color = esc_html($font_settings['text_color'] ?? '#ffff');
 
         $custom_css = "
             ul.listme li.conten .text h3 {
                 font-size: {$font_size};
+                color: {$text_color};
+            }
+            ul.listme li.conten {
+                border-bottom: 2px solid {$text_color};
+                display: inline-block;
+                width: 100%;
+                font-family: inherit;
+                padding: 2rem 0 2rem 0;
             }
         ";
         wp_add_inline_style('style-css', $custom_css);
@@ -113,11 +122,19 @@ class Custom_Body_Content_Display {
     public function sanitize_font_settings($input) {
         $output = [
             'font_size' => sanitize_text_field($input['font_size'] ?? 'inherit'),
+            'text_color' => sanitize_text_field($input['text_color'] ?? '#ffff'),
         ];
 
         if (!preg_match('/^(\d+(?:\.\d+)?)(px|em|rem|%)$/', $output['font_size'])) {
             if ($output['font_size'] !== 'inherit') {
                 $output['font_size'] = 'inherit';
+            }
+        }
+
+        // Basic color validation (allow named colors or hex or rgb/rgba)
+        if (!preg_match('/^(#([a-fA-F0-9]{3}){1,2}|rgba?\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}(,\s*(0|1|0?\.\d+))?\s*\)|[a-zA-Z]+)$/', $output['text_color'])) {
+            if ($output['text_color'] !== 'inherit') {
+                $output['text_color'] = '#ffff';
             }
         }
 
@@ -132,15 +149,26 @@ class Custom_Body_Content_Display {
         wp_enqueue_script('jquery-ui-sortable');
         wp_enqueue_style('wp-jquery-ui-dialog');
 
+        // Enqueue WP color picker assets
+        wp_enqueue_style('wp-color-picker');
+        wp_enqueue_script('wp-color-picker');
+
         wp_add_inline_style('wp-jquery-ui-dialog', $this->get_admin_css());
         wp_add_inline_script('jquery', $this->get_admin_js());
+
+        // Init color picker
+        wp_add_inline_script('wp-color-picker', "
+            jQuery(document).ready(function($){
+                $('#text_color').wpColorPicker();
+            });
+        ");
     }
 
     public function settings_page_html() {
         if (!current_user_can('manage_options')) wp_die('Permission denied');
 
         $items = get_option($this->option_name, []);
-        $font_settings = get_option($this->settings_option, ['font_size' => 'inherit']);
+        $font_settings = get_option($this->settings_option, ['font_size' => 'inherit', 'text_color' => '#ffff']);
         ?>
         <div class="wrap">
             <h1>Menu Items & Font Settings</h1>
@@ -224,6 +252,13 @@ class Custom_Body_Content_Display {
                         <td>
                             <input type="text" name="<?php echo esc_attr($this->settings_option); ?>[font_size]" id="font_size" value="<?php echo esc_attr($font_settings['font_size']); ?>" class="regular-text" placeholder="e.g. 28px, 1.5rem, inherit">
                             <p class="description">Enter font size with units (px, em, rem, %) or "inherit". Font family will use your theme default.</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row"><label for="text_color">Text Color</label></th>
+                        <td>
+                            <input type="text" name="<?php echo esc_attr($this->settings_option); ?>[text_color]" id="text_color" value="<?php echo esc_attr($font_settings['text_color']); ?>" class="regular-text wp-color-picker-field" placeholder="#ffff or red">
+                            <p class="description">Enter a CSS color value for the title text. E.g., #000000, red, rgb(255,0,0)</p>
                         </td>
                     </tr>
                 </table>

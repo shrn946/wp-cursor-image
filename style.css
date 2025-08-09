@@ -11,6 +11,7 @@
   margin: 0 !important;
   padding: 0;
     font-family:inherit;
+	color:#666666;
 }
 
 .conten {
@@ -21,7 +22,10 @@
   padding: 2rem;
   padding-left:0;
 }
-
+.conten:last-child {
+  border-bottom: none !important;
+  margin-bottom:50px;
+}
 .conten img.swipeimage {
   position: fixed;
   top: 0;
